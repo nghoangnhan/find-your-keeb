@@ -14,6 +14,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import com.nhnhan.find_your_keeb.dto.AdminOrderResponse;
+import com.nhnhan.find_your_keeb.dto.OrderItemResponse;
+
 @Service
 @RequiredArgsConstructor
 public class OrderService {
@@ -125,5 +128,31 @@ public class OrderService {
         request.setStockQuantity(product.getStockQuantity());
         request.setImageUrl(product.getImageUrl());
         return request;
+    }
+
+    public AdminOrderResponse toAdminOrderResponse(Order order) {
+        AdminOrderResponse dto = new AdminOrderResponse();
+        dto.setId(order.getId());
+        dto.setOrderNumber(order.getOrderNumber());
+        dto.setUsername(order.getUser().getUsername());
+        dto.setFirstName(order.getUser().getFirstName());
+        dto.setLastName(order.getUser().getLastName());
+        dto.setTotalAmount(order.getTotalAmount());
+        dto.setStatus(order.getStatus());
+        dto.setShippingAddress(order.getShippingAddress());
+        dto.setBillingAddress(order.getBillingAddress());
+        dto.setPaymentMethod(order.getPaymentMethod());
+        dto.setCreatedAt(order.getCreatedAt());
+        // Map order items
+        List<OrderItemResponse> itemDtos = order.getItems().stream().map(item -> {
+            OrderItemResponse itemDto = new OrderItemResponse();
+            itemDto.setId(item.getId());
+            itemDto.setProductName(item.getProduct().getName());
+            itemDto.setQuantity(item.getQuantity());
+            itemDto.setUnitPrice(item.getUnitPrice());
+            return itemDto;
+        }).toList();
+        dto.setItems(itemDtos);
+        return dto;
     }
 } 

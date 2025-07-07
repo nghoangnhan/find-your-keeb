@@ -6,6 +6,7 @@ import com.nhnhan.find_your_keeb.entity.OrderStatus;
 import com.nhnhan.find_your_keeb.entity.Product;
 import com.nhnhan.find_your_keeb.service.OrderService;
 import com.nhnhan.find_your_keeb.service.ProductService;
+import com.nhnhan.find_your_keeb.dto.AdminOrderResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -22,6 +23,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -80,18 +83,18 @@ public class AdminController {
 
     // Order Management
     @GetMapping("/orders")
-    @Operation(summary = "Get all orders", description = "Retrieve all customer orders with pagination")
+    @Operation(summary = "Get all orders", description = "Retrieve all customer orders")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Orders retrieved successfully",
-                content = @Content(schema = @Schema(implementation = Page.class))),
+                content = @Content(schema = @Schema(implementation = AdminOrderResponse.class))),
         @ApiResponse(responseCode = "403", description = "Access denied - Admin role required")
     })
-    public ResponseEntity<Page<Order>> getAllOrders(
-            @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Order> orders = orderService.getAllOrders(pageable);
-        return ResponseEntity.ok(orders);
+    public ResponseEntity<List<AdminOrderResponse>> getAllOrders() {
+        List<Order> orders = orderService.getAllOrders(Pageable.unpaged()).getContent();
+        List<AdminOrderResponse> dtos = orders.stream()
+            .map(orderService::toAdminOrderResponse)
+            .toList();
+        return ResponseEntity.ok(dtos);
     }
 
     @GetMapping("/orders/{id}")
