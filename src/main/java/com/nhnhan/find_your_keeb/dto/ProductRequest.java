@@ -57,6 +57,5 @@ public class ProductRequest {
     private Integer stockQuantity;
     
     @NotBlank(message = "Image URL is required")
-    @Pattern(regexp = "^(https?://).*", message = "Image URL must be a valid HTTP/HTTPS URL")
     private String imageUrl;
 } 

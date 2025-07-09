@@ -11,15 +11,22 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ResourceLoader;
+import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
 import java.math.BigDecimal;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProductService {
 
     private final ProductRepository productRepository;
+    @Autowired
+    private ResourceLoader resourceLoader;
 
     public Page<Product> getAllProducts(ProductFilterRequest filterRequest) {
         Pageable pageable = createPageable(filterRequest);
@@ -104,6 +111,27 @@ public class ProductService {
 
     public void deleteProduct(Long id) {
         Product product = getProductById(id);
+        // Delete image file if local
+        String imageUrl = product.getImageUrl();
+        if (imageUrl != null && imageUrl.startsWith("/product-images/")) {
+            String filename = imageUrl.replace("/product-images/", "");
+            try {
+                // Use persistent directory outside of target
+                String persistentDir = System.getProperty("user.dir") + "/product-images";
+                File file = new File(persistentDir, filename);
+                if (file.exists()) {
+                    if (file.delete()) {
+                        log.info("Deleted image file: {}", file.getAbsolutePath());
+                    } else {
+                        log.warn("Failed to delete image file: {}", file.getAbsolutePath());
+                    }
+                } else {
+                    log.warn("Image file not found for deletion: {}", file.getAbsolutePath());
+                }
+            } catch (Exception e) {
+                log.error("Error deleting image file: {}", e.getMessage());
+            }
+        }
         productRepository.delete(product);
     }
 

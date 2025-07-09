@@ -12,13 +12,20 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.HttpStatus;
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ResourceLoader;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/products")
 @RequiredArgsConstructor
@@ -27,6 +34,8 @@ import java.util.List;
 public class ProductController {
 
     private final ProductService productService;
+    @Autowired
+    private ResourceLoader resourceLoader;
 
     @GetMapping
     @Operation(summary = "Get products with filters", description = "Retrieve products with optional filtering by layout, price, brand, and other criteria")
@@ -114,5 +123,34 @@ public class ProductController {
             @Parameter(description = "Product ID") @PathVariable Long id) {
         productService.deleteProduct(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/upload-image")
+    @Operation(summary = "Upload product image", description = "Upload an image for a product (Admin only)")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Image uploaded successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid image file"),
+        @ApiResponse(responseCode = "403", description = "Access denied - Admin role required")
+    })
+    public ResponseEntity<String> uploadProductImage(@RequestParam("file") MultipartFile file) {
+        if (file.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("File is empty");
+        }
+        String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+        try {
+            // Save to persistent directory outside of target
+            String persistentDir = System.getProperty("user.dir") + "/product-images";
+            File dir = new File(persistentDir);
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+            log.info("Saving image to: {}", persistentDir);
+            File dest = new File(dir, filename);
+            file.transferTo(dest);
+            return ResponseEntity.ok("/product-images/" + filename);
+        } catch (IOException e) {
+            log.error(e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to save image");
+        }
     }
 } 
