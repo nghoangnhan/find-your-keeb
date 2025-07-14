@@ -3,6 +3,8 @@ package com.nhnhan.find_your_keeb.service;
 import com.nhnhan.find_your_keeb.dto.AuthRequest;
 import com.nhnhan.find_your_keeb.dto.AuthResponse;
 import com.nhnhan.find_your_keeb.dto.RegisterRequest;
+import com.nhnhan.find_your_keeb.dto.UserProfileResponse;
+import com.nhnhan.find_your_keeb.dto.UserProfileUpdateRequest;
 import com.nhnhan.find_your_keeb.entity.Cart;
 import com.nhnhan.find_your_keeb.entity.Role;
 import com.nhnhan.find_your_keeb.entity.User;
@@ -67,5 +69,50 @@ public class AuthService {
         
         return new AuthResponse(token, "Bearer", user.getId(), 
                 user.getUsername(), user.getEmail(), user.getRole().name());
+    }
+
+    public UserProfileResponse getUserProfile(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        String displayName = (user.getFirstName() != null ? user.getFirstName() : "") +
+                (user.getLastName() != null ? (" " + user.getLastName()) : "");
+        String gender = user.getGender();
+        String dateOfBirth = user.getDateOfBirth() != null ? user.getDateOfBirth().toString() : null;
+        String address = user.getAddress();
+        String phoneNumber = user.getPhoneNumber();
+        return new UserProfileResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                displayName.trim(),
+                gender,
+                dateOfBirth,
+                address,
+                phoneNumber
+        );
+    }
+
+    public UserProfileResponse updateUserProfile(String username, UserProfileUpdateRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (request.getDisplayName() != null) {
+            String[] parts = request.getDisplayName().trim().split(" ", 2);
+            user.setFirstName(parts[0]);
+            user.setLastName(parts.length > 1 ? parts[1] : "");
+        }
+        if (request.getGender() != null) {
+            user.setGender(request.getGender());
+        }
+        if (request.getDateOfBirth() != null) {
+            user.setDateOfBirth(java.time.LocalDate.parse(request.getDateOfBirth()));
+        }
+        if (request.getAddress() != null) {
+            user.setAddress(request.getAddress());
+        }
+        if (request.getPhoneNumber() != null) {
+            user.setPhoneNumber(request.getPhoneNumber());
+        }
+        userRepository.save(user);
+        return getUserProfile(username);
     }
 } 

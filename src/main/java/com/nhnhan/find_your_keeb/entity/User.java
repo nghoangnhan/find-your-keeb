@@ -38,6 +38,18 @@ public class User implements UserDetails {
     @Column(name = "last_name")
     private String lastName;
     
+    @Column(name = "gender")
+    private String gender;
+
+    @Column(name = "date_of_birth")
+    private java.time.LocalDate dateOfBirth;
+    
+    @Column(name = "address")
+    private String address;
+
+    @Column(name = "phone_number")
+    private String phoneNumber;
+    
     @Enumerated(EnumType.STRING)
     private Role role;
     
